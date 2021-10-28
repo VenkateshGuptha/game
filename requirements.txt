@@ -1,0 +1,8 @@
+altair
+pandas
+pymongo
+pymongo[srv]
+streamlit
+streamlit-player
+hydralit
+hydralit_components
