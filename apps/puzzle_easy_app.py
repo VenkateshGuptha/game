@@ -326,6 +326,7 @@ payload = {
     "outputs": {}
   }
 
+st.session_state['easy_puzzle_image'] = Image.open('resources/puzzle-easy.png')
 headers = {'Content-type':'application/json'}
 
 class PuzzleEasyApp(HydraHeadApp):
@@ -336,34 +337,46 @@ class PuzzleEasyApp(HydraHeadApp):
      def run(self):
          column_left, column_right = st.columns(2)
          self.image_placeholder = column_left.empty()
+         self.image_placeholder.image(st.session_state['easy_puzzle_image'], use_column_width=True)
 
-         image = Image.open('resources/puzzle-easy.png')
-         self.image_placeholder.image(image)
-
+         btnRedraw = column_right.button('Redraw')
          # Default values
          column_right.title('Block details')
          self.addBlocksInUI(column_right, 1, 1, 1, 1, 0, 0)
 
          if column_right.button('Submit'):
-             Block1Order = st.session_state.Block1Order
-             Block1SweepDirection = st.session_state.Block1SweepDirection
-             Block1StartDirection = st.session_state.Block1StartDirection
-             
-             directions = ['1:1']
-             
-             Block1Directions = {'sSweepDirection_experimental' : GetSweepDirection(Block1SweepDirection), 'sStartingDirection_experimental': GetStartingDirection(Block1StartDirection)}
-
-             payload['inputsStage2']['blocks']['manualOrder'] = directions
-             payload['inputsStage2']['blocks']['directionOverrides_experimental'] = {'1:1':Block1Directions}
-
+             payload = self.GetPayload()
              resp = requests.post(st.secrets["stage4"], data=json.dumps(payload), headers=headers)
              output = json.loads(resp.text)
+
              image = ConvertToImage(output['outputs']['Stage4']['base64Image'])
+             st.session_state['easy_puzzle_image'] = image;
              self.image_placeholder.image(image, use_column_width=True)
-             st.title('Scores')
+
              results = output['outputs']['Stage4']['report']
              self.SaveResults(results)
-             self.displayResults(results)
+             DisplayResults(column_left, results)
+
+         if btnRedraw:
+             payload = self.GetPayload()
+             resp = requests.post(st.secrets["stage2"], data=json.dumps(payload), headers=headers)
+             output = json.loads(resp.text)
+
+             image = ConvertToImage(output['outputs']['Stage2']['base64Image'])
+             st.session_state['easy_puzzle_image'] = image;
+             self.image_placeholder.image(image, use_column_width=True)
+
+     def GetPayload(self):
+         Block1Order = st.session_state.Block1Order
+         Block1SweepDirection = st.session_state.Block1SweepDirection
+         Block1StartDirection = st.session_state.Block1StartDirection
+             
+         directions = ['1:1']
+         Block1Directions = {'sSweepDirection_experimental' : GetSweepDirection(Block1SweepDirection), 'sStartingDirection_experimental': GetStartingDirection(Block1StartDirection)}
+
+         payload['inputsStage2']['blocks']['manualOrder'] = directions
+         payload['inputsStage2']['blocks']['directionOverrides_experimental'] = {'1:1':Block1Directions}
+         return payload
 
      def addBlocksInUI(self, column, blockNo, minValue, maxValue, orderNo, sweepDirection, startingDirection):
          blocknumber = 'Block' + str(blockNo)

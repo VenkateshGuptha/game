@@ -353,6 +353,7 @@ payload = {
     "outputs": {}
   }
 
+st.session_state['easyA_puzzle_image'] = Image.open('resources/puzzle-easy-caseA.png')
 headers = {'Content-type':'application/json'}
 st.session_state['row_direction'] = 90
 
@@ -364,10 +365,9 @@ class PuzzleMediumApp(HydraHeadApp):
      def run(self):
          column_left, column_right = st.columns(2)
          self.image_placeholder = column_left.empty()
+         self.image_placeholder.image(st.session_state['easyA_puzzle_image'], use_column_width=True)
 
-         image = Image.open('resources/puzzle-easy-caseA.png')
-         self.image_placeholder.image(image)
-
+         btnRedraw = column_right.button('Redraw')
          # Default values
          column_right.title('Block details')
          self.addBlocksInUI(column_right, 1, 1, 3, 1, 0, 0)
@@ -375,47 +375,65 @@ class PuzzleMediumApp(HydraHeadApp):
          self.addBlocksInUI(column_right, 3, 1, 3, 3, 0, 0)
 
          if column_right.button('Submit'):
-             Block1Order = st.session_state.Block1Order
-             Block1SweepDirection = st.session_state.Block1SweepDirection
-             Block1StartDirection = st.session_state.Block1StartDirection
-             Block2Order = st.session_state.Block2Order
-             Block2SweepDirection = st.session_state.Block2SweepDirection
-             Block2StartDirection = st.session_state.Block2StartDirection
-             Block3Order = st.session_state.Block3Order
-             Block3SweepDirection = st.session_state.Block3SweepDirection
-             Block3StartDirection = st.session_state.Block3StartDirection
-
-             if(6 != Block1Order + Block2Order + Block3Order):
-                st.error('Block number should be unique')
-                return
-             
-             directions = []
-             for i in range(1, 4):
-                 if(Block1Order == i):
-                    directions.append('1:' + str(1))
-                
-                 if(Block2Order == i):
-                    directions.append('1:' + str(2))
-                    
-                 if(Block3Order == i):
-                    directions.append('1:' + str(3))
-             
-             Block1Directions = {'sSweepDirection_experimental' : GetSweepDirection(Block1SweepDirection), 'sStartingDirection_experimental': GetStartingDirection(Block1StartDirection)}
-             Block2Directions = {'sSweepDirection_experimental' : GetSweepDirection(Block2SweepDirection), 'sStartingDirection_experimental': GetStartingDirection(Block2StartDirection)}
-             Block3Directions = {'sSweepDirection_experimental' : GetSweepDirection(Block3SweepDirection), 'sStartingDirection_experimental': GetStartingDirection(Block3StartDirection)}
-
-             payload['inputsStage2']['blocks']['manualOrder'] = directions
-             payload['inputsStage2']['blocks']['directionOverrides_experimental'] = {'1:1':Block1Directions, '1:2':Block2Directions, '1:3':Block3Directions}
+             payload = self.GetPayload()
+             if payload is None:
+                 return
 
              resp = requests.post(st.secrets["stage4"], data=json.dumps(payload), headers=headers)
              output = json.loads(resp.text)
              image = ConvertToImage(output['outputs']['Stage4']['base64Image'])
+             st.session_state['easyA_puzzle_image'] = image;
              self.image_placeholder.image(image, use_column_width=True)
 
-             st.title('Scores')
              results = output['outputs']['Stage4']['report']
              self.SaveResults(results)
-             self.displayResults(results)
+             DisplayResults(column_left, results)
+
+         if btnRedraw:
+             payload = self.GetPayload()
+             if payload is None:
+                 return
+
+             resp = requests.post(st.secrets["stage2"], data=json.dumps(payload), headers=headers)
+             output = json.loads(resp.text)
+
+             image = ConvertToImage(output['outputs']['Stage2']['base64Image'])
+             st.session_state['easyA_puzzle_image'] = image;
+             self.image_placeholder.image(image, use_column_width=True)
+
+     def GetPayload(self):
+         Block1Order = st.session_state.Block1Order
+         Block1SweepDirection = st.session_state.Block1SweepDirection
+         Block1StartDirection = st.session_state.Block1StartDirection
+         Block2Order = st.session_state.Block2Order
+         Block2SweepDirection = st.session_state.Block2SweepDirection
+         Block2StartDirection = st.session_state.Block2StartDirection
+         Block3Order = st.session_state.Block3Order
+         Block3SweepDirection = st.session_state.Block3SweepDirection
+         Block3StartDirection = st.session_state.Block3StartDirection
+
+         if(6 != Block1Order + Block2Order + Block3Order):
+            st.error('Block number should be unique')
+            return None
+             
+         directions = []
+         for i in range(1, 4):
+            if(Block1Order == i):
+                directions.append('1:' + str(1))
+                
+            if(Block2Order == i):
+                directions.append('1:' + str(2))
+                    
+            if(Block3Order == i):
+                directions.append('1:' + str(3))
+             
+         Block1Directions = {'sSweepDirection_experimental' : GetSweepDirection(Block1SweepDirection), 'sStartingDirection_experimental': GetStartingDirection(Block1StartDirection)}
+         Block2Directions = {'sSweepDirection_experimental' : GetSweepDirection(Block2SweepDirection), 'sStartingDirection_experimental': GetStartingDirection(Block2StartDirection)}
+         Block3Directions = {'sSweepDirection_experimental' : GetSweepDirection(Block3SweepDirection), 'sStartingDirection_experimental': GetStartingDirection(Block3StartDirection)}
+
+         payload['inputsStage2']['blocks']['manualOrder'] = directions
+         payload['inputsStage2']['blocks']['directionOverrides_experimental'] = {'1:1':Block1Directions, '1:2':Block2Directions, '1:3':Block3Directions}
+         return payload
 
      def addBlocksInUI(self, column, blockNo, minValue, maxValue, orderNo, sweepDirection, startingDirection):
          blocknumber = 'Block' + str(blockNo)
@@ -427,11 +445,6 @@ class PuzzleMediumApp(HydraHeadApp):
          column.number_input('Order', key=blockorder, min_value=minValue, max_value=maxValue, step=1, value=orderNo)
          column.radio('Start Direction', ('A - North', 'B - South'), key=blockstarting, index=startingDirection)
          column.radio('Sweep Direction', ('To the left', 'To the right'), key=blocksweep, index=sweepDirection)
-
-     def displayResults(self, report):
-         st.text('InFill Distance - ' + '{:.5f}'.format(report['fInfillDistance_m']) + 'Meters')
-         st.text('Transit Distance - ' + '{:.5f}'.format(report['fTransitDistance_m']) + 'Meters')
-         st.text('Total Distance - ' + '{:.5f}'.format(report['fTotalDistance_m']) + 'Meters')
 
      def SaveResults(self, report):
          block1 = {'blockno':1, 'orderno':st.session_state.Block1Order, 'startdirection':ConvertToDBStartDirection(st.session_state.Block1StartDirection), 'sweepdirection':ConvertToDBSweepDirection(st.session_state.Block1SweepDirection)}
