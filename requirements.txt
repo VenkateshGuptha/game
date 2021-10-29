@@ -6,3 +6,4 @@ streamlit
 streamlit-player
 hydralit
 hydralit_components
+streamlit-aggrid
