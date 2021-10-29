@@ -353,15 +353,8 @@ payload = {
     "outputs": {}
   }
 
-def GetImage():
-    client = MongoClient(st.secrets["url"])
-    db = client.Game
-    my_collections = db.PuzzleDetails
-    return(list(my_collections.find({"number": 2}))[0]['puzzle_default_image'])
-
 if 'easyA_puzzle_image' not in st.session_state:
-    buf = GetImage()
-    st.session_state['easyA_puzzle_image'] = Image.open(io.BytesIO(base64.b64decode(buf)))
+    st.session_state['easyA_puzzle_image'] = Image.open('resources/puzzle-easy-caseA.png')
 
 headers = {'Content-type':'application/json'}
 st.session_state['row_direction'] = 90
