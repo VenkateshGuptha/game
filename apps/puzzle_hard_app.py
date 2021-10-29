@@ -1180,9 +1180,6 @@ payload = {
     "outputs": {}
   }
 
-if 'hard_puzzle_image' not in st.session_state:
-    st.session_state['hard_puzzle_image'] = Image.open('resources/puzzle-medium.png')
-
 headers = {'Content-type':'application/json'}
 st.session_state['row_direction'] = 90
 
@@ -1194,6 +1191,9 @@ class PuzzleHardApp(HydraHeadApp):
      def run(self):
          column_left, column_right = st.columns(2)
          self.image_placeholder = column_left.empty()
+         
+         if 'hard_puzzle_image' not in st.session_state:
+            st.session_state['hard_puzzle_image'] = Image.open('resources/puzzle-medium.png')
          self.image_placeholder.image(st.session_state['hard_puzzle_image'], use_column_width=True)
 
          btnRedraw = column_right.button('Redraw')

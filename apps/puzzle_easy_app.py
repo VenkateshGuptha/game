@@ -326,9 +326,6 @@ payload = {
     "outputs": {}
   }
 
-if 'easy_puzzle_image' not in st.session_state:
-    st.session_state['easy_puzzle_image'] = Image.open('resources/puzzle-easy.png')
-
 headers = {'Content-type':'application/json'}
 
 class PuzzleEasyApp(HydraHeadApp):
@@ -339,6 +336,9 @@ class PuzzleEasyApp(HydraHeadApp):
      def run(self):
          column_left, column_right = st.columns(2)
          self.image_placeholder = column_left.empty()
+         
+         if 'easy_puzzle_image' not in st.session_state:
+            st.session_state['easy_puzzle_image'] = Image.open('resources/puzzle-easy.png')
          self.image_placeholder.image(st.session_state['easy_puzzle_image'], use_column_width=True)
 
          btnRedraw = column_right.button('Redraw')
