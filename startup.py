@@ -2,6 +2,8 @@ import streamlit as st
 import hydralit as hy
 import apps
 
+st.set_page_config(page_title='Shall we play a game?', layout='wide')
+
 over_theme = {'txc_inactive': '#FFFFFF'}
 app = hy.HydraApp(title='Navigation App', hide_streamlit_markers=False,use_navbar=True, navbar_sticky=False)
 
