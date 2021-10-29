@@ -326,7 +326,9 @@ payload = {
     "outputs": {}
   }
 
-st.session_state['easy_puzzle_image'] = Image.open('resources/puzzle-easy.png')
+if 'easy_puzzle_image' not in st.session_state:
+    st.session_state['easy_puzzle_image'] = Image.open('resources/puzzle-easy.png')
+
 headers = {'Content-type':'application/json'}
 
 class PuzzleEasyApp(HydraHeadApp):

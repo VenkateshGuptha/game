@@ -1180,7 +1180,9 @@ payload = {
     "outputs": {}
   }
 
-st.session_state['hard_puzzle_image'] = Image.open('resources/puzzle-medium.png')
+if 'hard_puzzle_image' not in st.session_state:
+    st.session_state['hard_puzzle_image'] = Image.open('resources/puzzle-medium.png')
+
 headers = {'Content-type':'application/json'}
 st.session_state['row_direction'] = 90
 
