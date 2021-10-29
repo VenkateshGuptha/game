@@ -334,7 +334,7 @@ class PuzzleMediumApp(HydraHeadApp):
              self.onRowDirectionChange()'''
 
          #self.image_placeholder.image(st.session_state['puzzle_image'], use_column_width=True)
-         image = Image.open('medium.png')
+         image = Image.open('resources/medium.png')
          self.image_placeholder.image(image)
 
          column_right.title('Block details')
