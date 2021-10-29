@@ -5,43 +5,9 @@ import requests
 import base64
 import io
 import json
+from pymongo import MongoClient
 
-class PuzzleMediumApp(HydraHeadApp):
-     def __init__(self, title = 'Hydralit Explorer', **kwargs):
-        self.__dict__.update(kwargs)
-        self.title = title
-
-     def run(self):
-         column_left, column_right = st.columns(2)
-         column_left.slider("Direction", 0, 360, 10)
-
-         column_right.title('Block details')
-         ''' column_right.caption('Block 1 :')
-         block1_order = column_right.number_input('Order', key='Block1Order', min_value=1, max_value=3, step=1, value=1)
-         block1_direction = column_right.radio('Start point', ('A', 'B', 'C', 'D'), key='Block1Direction')
-         
-         column_right.caption('Block 2 :')
-         block2_order = column_right.number_input('Order', key='Block2Order', min_value=1, max_value=3, step=1, value=2)
-         block2_direction = column_right.radio('Start point', ('A', 'B', 'C', 'D'), key='Block2Direction')
-         
-         column_right.caption('Block 3 :')
-         block3_order = column_right.number_input('Order', key='Block3Order', min_value=1, max_value=3, step=1, value=3)
-         block3_direction = column_right.radio('Start point', ('A', 'B', 'C', 'D'), key='Block3Direction') '''
-
-         self.addBlocksInUI(column_right, 1, 1, 3, 1, 1)
-         self.addBlocksInUI(column_right, 2, 1, 3, 2, 2)
-         self.addBlocksInUI(column_right, 3, 1, 3, 3, 2)
-
-         if column_right.button('Submit'):
-             st.text(str(st.session_state.Block1Order) + st.session_state.Block1Direction)
-             st.text(str(st.session_state.Block2Order) + st.session_state.Block2Direction)
-             st.text(str(st.session_state.Block3Order) + st.session_state.Block3Direction)
-
-             #resp = requests.get("https://loopr-linux-pylattice-dev.azurewebsites.net/")
-             #st.text(resp.text)
-
-             headers = {'Content-type':'application/json'}
-             payload = {
+payload = {
   "sVersion": "005",
   "features": {
     "InputBoundary": {
@@ -340,18 +306,149 @@ class PuzzleMediumApp(HydraHeadApp):
 	},
   "outputs": {}
 }
+
+headers = {'Content-type':'application/json'}
+st.session_state['row_direction'] = 90
+
+def LoadPuzzleDefaultImage() -> str:
+    client = MongoClient(st.secrets["url"])
+    db = client.Game
+    my_collections = db.PuzzleDetails
+    return(list(my_collections.find({"number": 2}))[0]['puzzle_default_image'])
+
+buf = LoadPuzzleDefaultImage()
+st.session_state['puzzle_image'] = Image.open(io.BytesIO(base64.b64decode(buf)))
+
+class PuzzleMediumApp(HydraHeadApp):
+     def __init__(self, title = 'Hydralit Explorer', **kwargs):
+        self.__dict__.update(kwargs)
+        self.title = title
+
+     def run(self):
+         column_left, column_right = st.columns(2)
+         self.image_placeholder = column_left.empty()
+
+         '''row_direction = column_left.slider("Row direction", 0, 360, st.session_state['row_direction'], key='RowDirection')
+         if(row_direction != st.session_state.row_direction):
+             st.session_state.row_direction = row_direction
+             self.onRowDirectionChange()'''
+
+         #self.image_placeholder.image(st.session_state['puzzle_image'], use_column_width=True)
+         image = Image.open('resources\\medium.png')
+         self.image_placeholder.image(image)
+
+         column_right.title('Block details')
+         self.addBlocksInUI(column_right, 1, 1, 3, 1, 1, 1)
+         self.addBlocksInUI(column_right, 2, 1, 3, 2, 1, 1)
+         self.addBlocksInUI(column_right, 3, 1, 3, 3, 1, 1)
+
+         if column_right.button('Submit'):
+             Block1Order = st.session_state.Block1Order
+             Block1SweepDirection = st.session_state.Block1SweepDirection
+             Block1StartDirection = st.session_state.Block1StartDirection
+             Block2Order = st.session_state.Block2Order
+             Block2SweepDirection = st.session_state.Block2SweepDirection
+             Block2StartDirection = st.session_state.Block2StartDirection
+             Block3Order = st.session_state.Block3Order
+             Block3SweepDirection = st.session_state.Block3SweepDirection
+             Block3StartDirection = st.session_state.Block3StartDirection
+
+             if(6 != Block1Order + Block2Order + Block3Order):
+                st.error('Block number should be unique')
+                return
+             
+             directions = []
+             for i in range(1, 4):
+                 if(Block1Order == i):
+                    directions.append('1:' + str(1))
+                
+                 if(Block2Order == i):
+                    directions.append('1:' + str(2))
+                    
+                 if(Block3Order == i):
+                    directions.append('1:' + str(3))
+             
+             Block1Directions = {'sSweepDirection_experimental' : self.GetSweepDirection(Block1SweepDirection), 'sStartingDirection_experimental': self.GetStartingDirection(Block1StartDirection)}
+             Block2Directions = {'sSweepDirection_experimental' : self.GetSweepDirection(Block2SweepDirection), 'sStartingDirection_experimental': self.GetStartingDirection(Block2StartDirection)}
+             Block3Directions = {'sSweepDirection_experimental' : self.GetSweepDirection(Block3SweepDirection), 'sStartingDirection_experimental': self.GetStartingDirection(Block3StartDirection)}
+
+             payload['inputsStage2']['blocks']['manualOrder'] = directions
+             payload['inputsStage2']['blocks']['directionOverrides_experimental'] = {'1:1':Block1Directions, '1:2':Block2Directions, '1:3':Block3Directions}
+
+             #st.text(directions)
+             #st.json(payload)
              resp = requests.post(st.secrets["stage2"], data=json.dumps(payload), headers=headers)
              output = json.loads(resp.text)
-             buf = io.BytesIO(base64.b64decode(output['outputs']['Stage2']['base64Image']))
-             image = Image.open(buf)
-             column_left.image(image, use_column_width=True)
+             self.displayPuzzleImage(output['outputs']['Stage2']['base64Image'])
+             st.title('Scores')
+             results = output['outputs']['Stage2']['report']
+             self.SaveResults(results)
+             self.displayResults(results)
 
+     def GetStartingDirection(self, startingDirection) -> str:
+         if 'A - North' == startingDirection:
+            return 'AB'
+         return 'BA'
 
-     def addBlocksInUI(self, column, blockNo, minValue, maxValue, orderNo, direction):
+     def GetSweepDirection(self, sweepDirection) -> str:
+         if 'To the left' == sweepDirection:
+            return 'ToTheLeft'
+         return 'ToTheRight'
+
+     def addBlocksInUI(self, column, blockNo, minValue, maxValue, orderNo, sweepDirection, startingDirection):
          blocknumber = 'Block' + str(blockNo)
-         blockorder = 'Block' + str(blockNo) + 'Order'
-         blockdirection = 'Block' + str(blockNo) + 'Direction'
+         blockorder = blocknumber + 'Order'
+         blocksweep = blocknumber + 'SweepDirection'
+         blockstarting = blocknumber + 'StartDirection'
 
          column.caption(blocknumber + ' :')
          column.number_input('Order', key=blockorder, min_value=minValue, max_value=maxValue, step=1, value=orderNo)
-         column.radio('Start point', ('A', 'B', 'C', 'D'), key=blockdirection, index=direction)
+         column.radio('Start Direction', ('A - North', 'B - South'), key=blockstarting, index=startingDirection)
+         column.radio('Sweep Direction', ('To the left', 'To the right'), key=blocksweep, index=sweepDirection)
+
+     def onRowDirectionChange(self):
+        payload['inputsStage1']['infill']['fDirection_deg'] = st.session_state.RowDirection
+        resp = requests.post(st.secrets["stage2"], data=json.dumps(payload), headers=headers)
+        output = json.loads(resp.text)
+        self.displayPuzzleImage(output['outputs']['Stage2']['base64Image'])
+
+     def displayPuzzleImage(self, base64string):
+         buf = io.BytesIO(base64.b64decode(base64string))
+         image = Image.open(buf)
+         self.image_placeholder.image(image, use_column_width=True)
+         st.session_state['puzzle_image'] = image;
+
+     def displayResults(self, report):
+         st.text('Estimated InFill Distance - ' + '{:.2f}'.format(report['fEstimatedInfillDistance_m'] / 1000) + 'Km')
+         st.text('Estimated Total Distance - ' + '{:.2f}'.format(report['fEstimatedTotalDistance_m'] / 1000) + 'Km')
+
+     def SaveResults(self, report):
+         block1 = {'blockno':1, 'orderno':st.session_state.Block1Order, 'startdirection':self.ConvertToDBStartDirection(st.session_state.Block1StartDirection), 'sweepdirection':self.ConvertToDBSweepDirection(st.session_state.Block1SweepDirection)}
+         block2 = {'blockno':2, 'orderno':st.session_state.Block2Order, 'startdirection':self.ConvertToDBStartDirection(st.session_state.Block2StartDirection), 'sweepdirection':self.ConvertToDBSweepDirection(st.session_state.Block2SweepDirection)}
+         block3 = {'blockno':3, 'orderno':st.session_state.Block3Order, 'startdirection':self.ConvertToDBStartDirection(st.session_state.Block3StartDirection), 'sweepdirection':self.ConvertToDBSweepDirection(st.session_state.Block3SweepDirection)}
+
+         results = {'userid': self.session_state.UserID, 'blocks':[block1, block2, block3], 'puzzlenumber':2, 'infilldistance':report['fEstimatedInfillDistance_m'], 'totaldistance':report['fEstimatedTotalDistance_m']}
+         client = MongoClient(st.secrets["url"])
+         db = client.Game
+         my_collections = db.PuzzleResults
+         x = my_collections.insert_one(results)
+
+     def ConvertToDBStartDirection(self, startingDirection) -> int:
+         if 'A - North' == startingDirection:
+            return 0
+         return 1
+
+     def ConvertToUIStartDirection(self, startingDirection) -> str:
+         if 0 == startingDirection:
+            return 'A - North'
+         return 'B - Sourth'
+
+     def ConvertToDBSweepDirection(self, sweepDirection) -> int:
+         if 'To the left' == sweepDirection:
+            return 0
+         return 1
+
+     def ConvertToUISweepDirection(self, sweepDirection) -> str:
+         if 0 == sweepDirection:
+            return 'To the left'
+         return 'To the right'

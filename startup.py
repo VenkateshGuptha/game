@@ -12,6 +12,8 @@ app.add_app("Puzzle - Medium", app=apps.PuzzleMediumApp(title='Puzzle - Medium')
 app.add_app("Puzzle - Hard", app=apps.PuzzleHardApp(title='Puzzle - Hard'))
 app.add_app("Scores", app=apps.LeaderBoardApp(title='Leaderboard'))
 
+app.add_app("Login", apps.LoginApp(title='Login'),is_login=True) 
+
 complex_nav = {
     'Intro':['Home'],
     'Tutorial':['Tutorial'],
