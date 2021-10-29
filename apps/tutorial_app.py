@@ -8,6 +8,8 @@ class TutorialApp(HydraHeadApp):
         self.title = title
 
      def run(self):
-         col1, col2 = st.columns(2)
-         col1.text("Video");
-         st_player("https://youtu.be/CmSKVW1v0xM")
+         col1, col2, col3 = st.columns(3)
+         #st_player("https://youtu.be/CmSKVW1v0xM")
+         video_file = open('resources/Full Tutorial.mp4', 'rb')
+         video_bytes = video_file.read()
+         col2.video(video_bytes)

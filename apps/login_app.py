@@ -33,7 +33,7 @@ class LoginApp(HydraHeadApp):
          user = list(rows)
          if len(user) > 0:
             #user = list(rows)[0]
-            self.LoginSuccess(user[0]['_id'])
+            self.LoginSuccess(user[0]['_id'], username)
          else:
             #self.ProfileSetup(username)
             self.CreateNewUser(username)
@@ -44,7 +44,7 @@ class LoginApp(HydraHeadApp):
          my_collections = db.Users
          user = {'username':username}
          userRecord = my_collections.insert_one(user)
-         self.LoginSuccess(userRecord.inserted_id)
+         self.LoginSuccess(userRecord.inserted_id, username)
 
      def ProfileSetup(self, username):
          login_form = st.form(key="profile_setup")
@@ -64,10 +64,11 @@ class LoginApp(HydraHeadApp):
             userRecord = my_collections.insert_one(user)
             #self.LoginSuccess(userRecord.inserted_id)
 
-     def LoginSuccess(self, userid):
+     def LoginSuccess(self, userid, username):
         #access control uses an int value to allow for levels of permission that can be set for each user, this can then be checked within each app seperately.
-        self.set_access(1, 'username')
+        self.set_access(1, username)
         self.session_state.UserID = userid
+        self.session_state.current_user = username
         #self.session_state.FirstName = firstname
         #self.session_state.LastName = lastname
 

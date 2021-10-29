@@ -6,8 +6,5 @@ class HomeApp(HydraHeadApp):
         self.__dict__.update(kwargs)
         self.title = title
 
-     def _userName(self):
-          return "Venkatesh"
-
      def run(self):
-          st.title("Home App")
+          st.title("Welcome " + self.session_state.current_user + '!')
