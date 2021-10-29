@@ -2,7 +2,7 @@ altair
 pandas
 pymongo
 pymongo[srv]
-streamlit
+streamlit==1.0.0
 streamlit-player
 hydralit
 hydralit_components
